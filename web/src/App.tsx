@@ -69,9 +69,9 @@ function App() {
 
   const downloadPdf = async () => {
     const template = await fetch('/SAOA_FINAL_cleaned.pdf').then((response) => response.arrayBuffer())
-    const document = await PDFDocument.load(template)
-    const page = document.getPage(0)
-    const font = await document.embedFont(StandardFonts.Helvetica)
+    const pdfDocument = await PDFDocument.load(template)
+    const page = pdfDocument.getPage(0)
+    const font = await pdfDocument.embedFont(StandardFonts.Helvetica)
     const ink = rgb(0.08, 0.12, 0.24)
     const write = (value: string, x: number, y: number, size = 9, maxWidth = 300) => {
       page.drawText(value, { x, y, size, font, color: ink, maxWidth, lineHeight: size + 2 })
@@ -104,10 +104,10 @@ function App() {
     write(data.practitionerSignature, 262, 90, 9, 130)
     write(data.screeningDate, 425, 90, 9, 120)
 
-    const bytes = await document.save()
+    const bytes = await pdfDocument.save()
     const blob = new Blob([new Uint8Array(bytes)], { type: 'application/pdf' })
     const url = URL.createObjectURL(blob)
-    const link = document.createElement('a')
+    const link = pdfDocument.createElement('a')
     link.href = url
     link.download = `SAOA-certificate-${data.patientId || 'draft'}.pdf`
     link.click()
