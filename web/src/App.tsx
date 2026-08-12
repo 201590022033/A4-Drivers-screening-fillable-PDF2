@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { Check, Download, FileText, Stethoscope, UserRound } from 'lucide-react'
+import { Check, Download, Eye, FileText, ShieldCheck, Stethoscope, Trash2, UserRound, X } from 'lucide-react'
 import { PDFDocument, StandardFonts, rgb } from 'pdf-lib'
 import './App.css'
 
@@ -38,7 +38,7 @@ const initialData: CertificateData = {
 
 function loadData() {
   try {
-    return { ...initialData, ...JSON.parse(localStorage.getItem(STORAGE_KEY) ?? '{}') }
+    return { ...initialData, ...JSON.parse(sessionStorage.getItem(STORAGE_KEY) ?? '{}') }
   } catch {
     return initialData
   }
@@ -47,16 +47,29 @@ function loadData() {
 function App() {
   const [view, setView] = useState<View>('patient')
   const [data, setData] = useState<CertificateData>(loadData)
-  const [status, setStatus] = useState('Saved on this device')
+  const [previewUrl, setPreviewUrl] = useState('')
+  const [pdfError, setPdfError] = useState('')
+  const [isGenerating, setIsGenerating] = useState(false)
 
   useEffect(() => {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(data))
-    setStatus('Saved on this device')
+    sessionStorage.setItem(STORAGE_KEY, JSON.stringify(data))
   }, [data])
 
+  useEffect(() => {
+    if (!previewUrl) return
+    return () => URL.revokeObjectURL(previewUrl)
+  }, [previewUrl])
+
   const update = (field: keyof CertificateData, value: string) => {
-    setStatus('Saving...')
     setData((current) => ({ ...current, [field]: value }))
+  }
+
+  const clearCertificate = () => {
+    sessionStorage.removeItem(STORAGE_KEY)
+    setData(initialData)
+    setView('patient')
+    setPreviewUrl('')
+    setPdfError('')
   }
 
   const patientComplete = Boolean(data.patientName && data.postalAddress && data.patientId && data.patientSignature)
@@ -67,8 +80,10 @@ function App() {
     data.practitionerSignature && data.screeningDate,
   )
 
-  const downloadPdf = async () => {
-    const template = await fetch('/SAOA_FINAL_cleaned.pdf').then((response) => response.arrayBuffer())
+  const createPdf = async () => {
+    const response = await fetch('/SAOA_FINAL_cleaned.pdf')
+    if (!response.ok) throw new Error('The certificate template could not be loaded.')
+    const template = await response.arrayBuffer()
     const pdfDocument = await PDFDocument.load(template)
     const page = pdfDocument.getPage(0)
     const font = await pdfDocument.embedFont(StandardFonts.Helvetica)
@@ -104,24 +119,43 @@ function App() {
     write(data.practitionerSignature, 262, 90, 9, 130)
     write(data.screeningDate, 425, 90, 9, 120)
 
-    const bytes = await pdfDocument.save()
-    const blob = new Blob([new Uint8Array(bytes)], { type: 'application/pdf' })
-    const url = URL.createObjectURL(blob)
-    const link = pdfDocument.createElement('a')
-    link.href = url
+    return new Uint8Array(await pdfDocument.save())
+  }
+
+  const previewPdf = async () => {
+    setIsGenerating(true)
+    setPdfError('')
+    try {
+      const bytes = await createPdf()
+      setPreviewUrl(URL.createObjectURL(new Blob([bytes], { type: 'application/pdf' })))
+    } catch (error) {
+      setPdfError(error instanceof Error ? error.message : 'The PDF could not be generated.')
+    } finally {
+      setIsGenerating(false)
+    }
+  }
+
+  const downloadPreview = () => {
+    if (!previewUrl) return
+    const link = window.document.createElement('a')
+    link.href = previewUrl
     link.download = `SAOA-certificate-${data.patientId || 'draft'}.pdf`
     link.click()
-    URL.revokeObjectURL(url)
   }
 
   return (
     <div className="app-shell">
       <header className="topbar">
         <div className="brand-mark"><span>SA</span><span>OA</span></div>
-        <div><strong>Driver Vision Certificate</strong><small>{status}</small></div>
-        <button className="download-button" type="button" onClick={downloadPdf} disabled={!patientComplete || !practitionerComplete}>
-          <Download size={18} /> Download PDF
-        </button>
+        <div><strong>Driver Vision Certificate</strong><small>Cleared automatically when this tab closes</small></div>
+        <div className="topbar-actions">
+          <button className="clear-button" type="button" onClick={clearCertificate} disabled={!patientComplete && !data.practitionerName} title="Erase certificate data">
+            <Trash2 size={17} /> Clear
+          </button>
+          <button className="download-button" type="button" onClick={() => void previewPdf()} disabled={!patientComplete || !practitionerComplete || isGenerating}>
+            <Eye size={18} /> {isGenerating ? 'Preparing...' : 'Preview PDF'}
+          </button>
+        </div>
       </header>
 
       <nav className="workflow" aria-label="Certificate workflow">
@@ -147,10 +181,10 @@ function App() {
             <Field number="2" label="Postal address" value={data.postalAddress} onChange={(value) => update('postalAddress', value)} multiline />
             <Field number="3" label="South African ID or passport number" value={data.patientId} onChange={(value) => update('patientId', value)} />
             <Field number="4" label="Typed signature" value={data.patientSignature} onChange={(value) => update('patientSignature', value)} />
-            <div className="form-actions"><span><FileText size={17} /> Details remain on this device.</span><button type="submit" disabled={!patientComplete}>Continue to optometrist</button></div>
+            <div className="form-actions"><span><ShieldCheck size={17} /> Details exist only in this browser tab.</span><button type="submit" disabled={!patientComplete}>Continue to optometrist</button></div>
           </form>
         ) : (
-          <form className="clinical-form" onSubmit={(event) => { event.preventDefault(); void downloadPdf() }}>
+          <form className="clinical-form" onSubmit={(event) => { event.preventDefault(); void previewPdf() }}>
             <div className="form-grid compact">
               <Field number="5" label="Full name and surname" value={data.practitionerName} onChange={(value) => update('practitionerName', value)} />
               <Field number="6" label="Practice physical address" value={data.practiceAddress} onChange={(value) => update('practiceAddress', value)} multiline />
@@ -170,10 +204,27 @@ function App() {
               <Field number="22" label="Practitioner typed signature" value={data.practitionerSignature} onChange={(value) => update('practitionerSignature', value)} />
               <Field number="23" label="Date of screening" value={data.screeningDate} onChange={(value) => update('screeningDate', value)} type="date" />
             </div>
-            <div className="form-actions"><button type="button" className="secondary" onClick={() => setView('patient')}>Back to patient</button><button type="submit" disabled={!patientComplete || !practitionerComplete}><Download size={18} /> Generate printable PDF</button></div>
+            <div className="form-actions"><button type="button" className="secondary" onClick={() => setView('patient')}>Back to patient</button><button type="submit" disabled={!patientComplete || !practitionerComplete || isGenerating}><Eye size={18} /> {isGenerating ? 'Preparing...' : 'Preview printable PDF'}</button></div>
           </form>
         )}
+        {pdfError && <div className="error-message" role="alert">{pdfError}</div>}
       </main>
+      {previewUrl && (
+        <div className="preview-backdrop" role="presentation">
+          <section className="preview-dialog" role="dialog" aria-modal="true" aria-labelledby="preview-title">
+            <header>
+              <div><p>Alignment check</p><h2 id="preview-title">Printable certificate preview</h2></div>
+              <button className="icon-button" type="button" onClick={() => setPreviewUrl('')} title="Close preview" aria-label="Close preview"><X size={20} /></button>
+            </header>
+            <p className="preview-guidance"><FileText size={17} /> Confirm every value sits inside its intended certificate field before downloading.</p>
+            <iframe src={previewUrl} title="Completed driver vision certificate" />
+            <footer>
+              <button className="secondary" type="button" onClick={() => setPreviewUrl('')}>Return to form</button>
+              <button type="button" onClick={downloadPreview}><Download size={18} /> Download PDF</button>
+            </footer>
+          </section>
+        </div>
+      )}
     </div>
   )
 }
