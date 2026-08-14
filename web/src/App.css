@@ -228,7 +228,8 @@ main {
 input,
 textarea,
 select {
-  width: 100%;
+  width: 80%;
+  margin-right: 20%;
   box-sizing: border-box;
   color: var(--ink);
   background: #fff;
@@ -239,12 +240,12 @@ select {
 
 input,
 select {
-  height: 48px;
+  height: 38.4px;
   padding: 0 13px;
 }
 
 textarea {
-  min-height: 84px;
+  min-height: 67.2px;
   padding: 11px 13px;
   resize: vertical;
 }

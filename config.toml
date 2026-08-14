@@ -1,0 +1,15 @@
+[project]
+name = "A4 SAOA Driver Screening Certificate"
+template_pdf = "SAOA_FINAL_cleaned.pdf"
+output_pdf = "SAOA_Print_Test.pdf"
+
+[certificate]
+default_view = "patient"
+storage_key = "saoa-certificate-data"
+pdf_filename = "SAOA-certificate"
+
+[web]
+root = "web"
+dev_command = "npm run dev"
+build_command = "npm run build"
+preview_command = "npm run preview"
