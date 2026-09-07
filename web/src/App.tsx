@@ -4,7 +4,7 @@ import { PDFDocument } from 'pdf-lib'
 import { parseWhatsAppReply, whatsappUrl } from './whatsapp'
 import './App.css'
 
-type View = 'patient' | 'practitioner' | 'dashboard'
+type View = 'patient' | 'practitioner' | 'dashboard' | 'recall'
 type CertificateData = {
   patientName: string
   postalAddress: string
@@ -60,6 +60,7 @@ function App() {
   const [patientLink, setPatientLink] = useState('')
   const [dashboardRows, setDashboardRows] = useState<{ certificateNumber: string, status: string, marketingAccepted: boolean, patientName?: string }[]>([])
   const [dashboardCounts, setDashboardCounts] = useState<Record<string, number>>({})
+  const [recallRows, setRecallRows] = useState<{ id: number, name: string, cellphone: string, nextRecallDate?: string, marketingAllowed: boolean, lastScreening?: string }[]>([])
   const [importText, setImportText] = useState('')
   const [importPreview, setImportPreview] = useState<ReturnType<typeof parseWhatsAppReply> | null>(null)
 
@@ -95,6 +96,7 @@ function App() {
     try { const response = await fetch('http://127.0.0.1:8000/api/dashboard'); const result = await response.json() as { certificates?: typeof dashboardRows, counts?: Record<string, number> }; setDashboardRows(result.certificates || []); setDashboardCounts(result.counts || {}); setView('dashboard') }
     catch { setDashboardRows([]); setDashboardCounts({}); setView('dashboard'); setPdfError('Dashboard opened in local mode; the optional API service is unavailable.') }
   }
+  const loadRecall = async () => { try { const response = await fetch('http://127.0.0.1:8000/api/recall'); const result = await response.json() as { patients?: typeof recallRows }; setRecallRows(result.patients || []); setView('recall') } catch { setRecallRows([]); setView('recall'); setPdfError('Recall opened in local mode; the optional API service is unavailable.') } }
 
   const clearCertificate = () => {
     sessionStorage.removeItem(STORAGE_KEY)
@@ -178,6 +180,7 @@ function App() {
             <Trash2 size={17} /> Clear
           </button>
           <button className="clear-button" type="button" onClick={() => void loadDashboard()}><FileText size={17} /> Optometrist dashboard</button>
+          <button className="clear-button" type="button" onClick={() => void loadRecall()}>Recall &amp; Marketing</button>
           <button className="download-button" type="button" onClick={() => void previewPdf()} disabled={!patientComplete || !practitionerComplete || isGenerating}>
             <Eye size={18} /> {isGenerating ? 'Preparing...' : 'Preview PDF'}
           </button>
@@ -193,6 +196,7 @@ function App() {
           <span className="step-icon"><Stethoscope size={18} /></span><span><b>Optometrist</b><small>Fields 5-23</small></span>{practitionerComplete && <Check size={17} />}
         </button>
         <button className={view === 'dashboard' ? 'active' : ''} type="button" onClick={() => void loadDashboard()}><span className="step-icon"><FileText size={18} /></span><span><b>Dashboard</b><small>Practice follow-up</small></span></button>
+        <button className={view === 'recall' ? 'active' : ''} type="button" onClick={() => void loadRecall()}><span className="step-icon"><ShieldCheck size={18} /></span><span><b>Recall &amp; Marketing</b><small>Permission-aware queue</small></span></button>
       </nav>
 
       <main>
@@ -202,7 +206,7 @@ function App() {
           <p>{view === 'patient' ? 'Enter the details exactly as they appear on the patient’s identification.' : `Completing certificate for ${data.patientName || 'the patient'}.`}</p>
         </section>
 
-        {view === 'dashboard' ? <Dashboard rows={dashboardRows} counts={dashboardCounts} /> : view === 'patient' ? (
+        {view === 'dashboard' ? <Dashboard rows={dashboardRows} counts={dashboardCounts} /> : view === 'recall' ? <Recall rows={recallRows} /> : view === 'patient' ? (
           <form className="form-grid" onSubmit={(event) => { event.preventDefault(); setView('practitioner') }}>
             <Field number="1" label="Full name and surname" value={data.patientName} onChange={(value) => update('patientName', value)} autoComplete="name" />
             <Field number="2" label="Postal address" value={data.postalAddress} onChange={(value) => update('postalAddress', value)} />
@@ -280,6 +284,10 @@ function Consent({ terms, marketing, onTerms, onMarketing }: { terms: boolean, m
 function Dashboard({ rows, counts }: { rows: { certificateNumber: string, status: string, marketingAccepted: boolean, patientName?: string }[], counts: Record<string, number> }) {
   const cards = [['DRAFT','Draft'],['AWAITING_PATIENT_DETAILS','Awaiting patient'],['READY_FOR_SCREENING','Ready for screening'],['COMPLETED_TODAY','Completed today']]
   return <section className="dashboard-panel"><p className="eyebrow">Practice intelligence</p><h2>Certificate follow-up dashboard</h2><p>Live status counts from the local practice database.</p><div className="dashboard-stats">{cards.map(([key,label]) => <strong key={key}>{counts[key] || 0}<small>{label}</small></strong>)}</div><div className="dashboard-table">{rows.length ? rows.map((row) => <div className="dashboard-row" key={row.certificateNumber}><b>{row.patientName || 'Patient details pending'}<small>{row.certificateNumber}</small></b><span>{row.status}</span><span>{row.marketingAccepted ? 'WhatsApp permitted' : 'No marketing consent'}</span></div>) : <p>No certificates have been created yet.</p>}</div></section>
+}
+
+function Recall({ rows }: { rows: { id: number, name: string, cellphone: string, nextRecallDate?: string, marketingAllowed: boolean, lastScreening?: string }[] }) {
+  return <section className="dashboard-panel"><p className="eyebrow">Local patient communications</p><h2>Recall &amp; Marketing</h2><p>Only patients with explicit recall or marketing permission appear here. Messages are opened in WhatsApp and sent manually.</p><div className="dashboard-table">{rows.length ? rows.map(row => <div className="dashboard-row" key={row.id}><b>{row.name}<small>{row.cellphone || 'No cellphone recorded'}</small></b><span>Last screening: {row.lastScreening || 'Not recorded'}</span><span>{row.marketingAllowed ? 'Marketing permitted' : 'Recall only'}</span></div>) : <p>No permissioned patients are currently due for follow-up.</p>}</div></section>
 }
 
 function EyeTests({ title, start, values, onChange }: { title: string, start: number, values: string[], onChange: ((value: string) => void)[] }) {

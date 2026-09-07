@@ -29,6 +29,10 @@ class API(BaseHTTPRequestHandler):
         except sqlite3.IntegrityError: self.send_json(409, {"error":"certificate number already exists"}); return
         self.send_json(201, {"certificateNumber":number, "patientLink":f"/patient/{token}", "whatsappText":f"Hello. Please complete your driver vision certificate here: /patient/{token}"})
     def do_GET(self):
+        if self.path.startswith("/api/recall"):
+            with connect(DB) as db:
+                rows = db.execute("SELECT p.id,p.first_name,p.surname,p.cellphone,p.next_recall_date,p.marketing_allowed,MAX(s.screening_date) FROM patients p LEFT JOIN screenings s ON s.patient_id=p.id WHERE (p.recall_allowed=1 OR p.marketing_allowed=1) GROUP BY p.id ORDER BY COALESCE(p.next_recall_date,'9999-12-31')").fetchall()
+            self.send_json(200, {"patients":[{"id":r[0],"name":f"{r[1]} {r[2]}".strip(),"cellphone":r[3],"nextRecallDate":r[4],"marketingAllowed":bool(r[5]),"lastScreening":r[6]} for r in rows]}); return
         if self.path.startswith("/api/patient/"):
             token = self.path.removeprefix("/api/patient/").split("?",1)[0]
             with sqlite3.connect(DB) as db: row = db.execute("SELECT certificate_number, status, patient_json FROM certificates WHERE patient_token_hash=?", (digest(token),)).fetchone()
