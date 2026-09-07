@@ -3,3 +3,5 @@ __pycache__/
 SAOA_Print_Test.pdf
 # Kimi project memory
 .kimi-memory/
+# Local runtime database
+backend/*.sqlite3

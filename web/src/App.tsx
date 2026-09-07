@@ -1,9 +1,10 @@
 import { useEffect, useState } from 'react'
 import { Check, Download, Eye, FileText, ShieldCheck, Stethoscope, Trash2, UserRound, X } from 'lucide-react'
 import { PDFDocument } from 'pdf-lib'
+import { parseWhatsAppReply, whatsappUrl } from './whatsapp'
 import './App.css'
 
-type View = 'patient' | 'practitioner'
+type View = 'patient' | 'practitioner' | 'dashboard'
 type CertificateData = {
   patientName: string
   postalAddress: string
@@ -55,6 +56,11 @@ function App() {
   const [previewUrl, setPreviewUrl] = useState('')
   const [pdfError, setPdfError] = useState('')
   const [isGenerating, setIsGenerating] = useState(false)
+  const [patientPhone, setPatientPhone] = useState('')
+  const [patientLink, setPatientLink] = useState('')
+  const [dashboardRows, setDashboardRows] = useState<{ certificateNumber: string, status: string, marketingAccepted: boolean }[]>([])
+  const [importText, setImportText] = useState('')
+  const [importPreview, setImportPreview] = useState<ReturnType<typeof parseWhatsAppReply> | null>(null)
 
   useEffect(() => {
     sessionStorage.setItem(STORAGE_KEY, JSON.stringify(data))
@@ -67,6 +73,26 @@ function App() {
 
   const update = (field: keyof CertificateData, value: string) => {
     setData((current) => ({ ...current, [field]: value }))
+  }
+
+  const generatePatientLink = async () => {
+    setPdfError('')
+    try {
+      const whatsapp = whatsappUrl(patientPhone, data.certificateNumber || 'to be confirmed')
+      setPatientLink(whatsapp)
+      try { await navigator.clipboard?.writeText(whatsapp) } catch {
+        const helper = window.document.createElement('textarea'); helper.value = whatsapp; helper.style.position = 'fixed'; helper.style.opacity = '0'; window.document.body.appendChild(helper); helper.select(); window.document.execCommand('copy'); helper.remove()
+      }
+      setPdfError('WhatsApp questionnaire link copied. Open it or paste it into WhatsApp and send manually.')
+    } catch (error) { setPdfError(error instanceof Error ? error.message : 'Could not create patient link.') }
+  }
+
+  const previewImport = () => setImportPreview(parseWhatsAppReply(importText, data.certificateNumber))
+  const confirmImport = () => { if (!importPreview || importPreview.warning?.includes('mismatch')) return; const p = importPreview.parsed; setData(current => ({ ...current, patientName: p.patientName || current.patientName, patientId: p.patientId || current.patientId, postalAddress: p.postalAddress || current.postalAddress })) ; setImportPreview(null); setImportText('') }
+
+  const loadDashboard = async () => {
+    try { const response = await fetch('http://127.0.0.1:8000/api/dashboard'); const result = await response.json() as { certificates?: typeof dashboardRows }; setDashboardRows(result.certificates || []); setView('dashboard') }
+    catch { setDashboardRows([]); setView('dashboard'); setPdfError('Dashboard opened in local mode; the optional API service is unavailable.') }
   }
 
   const clearCertificate = () => {
@@ -150,6 +176,7 @@ function App() {
           <button className="clear-button" type="button" onClick={clearCertificate} disabled={!patientComplete && !data.practitionerName} title="Erase certificate data">
             <Trash2 size={17} /> Clear
           </button>
+          <button className="clear-button" type="button" onClick={() => void loadDashboard()}><FileText size={17} /> Optometrist dashboard</button>
           <button className="download-button" type="button" onClick={() => void previewPdf()} disabled={!patientComplete || !practitionerComplete || isGenerating}>
             <Eye size={18} /> {isGenerating ? 'Preparing...' : 'Preview PDF'}
           </button>
@@ -164,6 +191,7 @@ function App() {
         <button className={view === 'practitioner' ? 'active' : ''} type="button" onClick={() => setView('practitioner')}>
           <span className="step-icon"><Stethoscope size={18} /></span><span><b>Optometrist</b><small>Fields 5-23</small></span>{practitionerComplete && <Check size={17} />}
         </button>
+        <button className={view === 'dashboard' ? 'active' : ''} type="button" onClick={() => void loadDashboard()}><span className="step-icon"><FileText size={18} /></span><span><b>Dashboard</b><small>Practice follow-up</small></span></button>
       </nav>
 
       <main>
@@ -173,15 +201,19 @@ function App() {
           <p>{view === 'patient' ? 'Enter the details exactly as they appear on the patient’s identification.' : `Completing certificate for ${data.patientName || 'the patient'}.`}</p>
         </section>
 
-        {view === 'patient' ? (
+        {view === 'dashboard' ? <Dashboard rows={dashboardRows} /> : view === 'patient' ? (
           <form className="form-grid" onSubmit={(event) => { event.preventDefault(); setView('practitioner') }}>
             <Field number="1" label="Full name and surname" value={data.patientName} onChange={(value) => update('patientName', value)} autoComplete="name" />
             <Field number="2" label="Postal address" value={data.postalAddress} onChange={(value) => update('postalAddress', value)} />
             <Field number="2b" label="Postal address (line 2)" value={data.postalAddress2} onChange={(value) => update('postalAddress2', value)} />
             <Field number="3" label="South African ID or passport number" value={data.patientId} onChange={(value) => update('patientId', value)} />
             <Field number="4" label="Typed signature" value={data.patientSignature} onChange={(value) => update('patientSignature', value)} />
+            <Field number="C" label="Preprinted certificate number (practice)" value={data.certificateNumber} onChange={(value) => update('certificateNumber', value)} />
+            <label className="field"><span><i>☎</i>Patient WhatsApp/cell number (practice use)</span><input value={patientPhone} onChange={(event) => setPatientPhone(event.target.value)} type="tel" placeholder="+27..." /></label>
             <Consent onTerms={(value) => setData((current) => ({ ...current, termsAccepted: value }))} onMarketing={(value) => setData((current) => ({ ...current, marketingAccepted: value }))} terms={data.termsAccepted} marketing={data.marketingAccepted} />
-            <div className="form-actions"><span><ShieldCheck size={17} /> Details exist only in this browser tab.</span><button type="submit" disabled={!patientComplete}>Continue to optometrist</button></div>
+            <div className="form-actions"><span><ShieldCheck size={17} /> Patient details stay with the practice.</span><button type="button" className="secondary" onClick={() => void generatePatientLink()} disabled={!patientPhone || !data.certificateNumber}>WhatsApp patient details</button><button type="button" className="secondary" onClick={() => setImportPreview({ parsed: { certificateNumber: data.certificateNumber }, missing: [] })}>Import WhatsApp reply</button><button type="submit" disabled={!patientComplete}>Continue to optometrist</button></div>
+            {patientLink && <p className="generated-link">Patient link: <code>{patientLink}</code></p>}
+            {importPreview && <div className="import-panel"><h3>Import WhatsApp reply</h3><textarea value={importText} onChange={e => setImportText(e.target.value)} placeholder="Paste the patient's completed WhatsApp reply here" /><button type="button" onClick={previewImport} disabled={!importText}>Preview recognised values</button>{importPreview.parsed.patientName !== undefined && <div className="import-result"><p>Full name: {importPreview.parsed.patientName || 'not recognised'}</p><p>ID number: {importPreview.parsed.patientId || 'not recognised'}</p><p>Postal address: {importPreview.parsed.postalAddress || 'not recognised'}</p>{importPreview.warning && <strong className="field-warning">{importPreview.warning}</strong>}<button type="button" onClick={confirmImport} disabled={Boolean(importPreview.warning)}>Confirm import</button><button type="button" className="secondary" onClick={() => setImportPreview(null)}>Cancel</button></div>}</div>}
           </form>
         ) : (
           <form className="clinical-form" onSubmit={(event) => { event.preventDefault(); void previewPdf() }}>
@@ -244,6 +276,10 @@ function Consent({ terms, marketing, onTerms, onMarketing }: { terms: boolean, m
   </fieldset>
 }
 
+function Dashboard({ rows }: { rows: { certificateNumber: string, status: string, marketingAccepted: boolean }[] }) {
+  return <section className="dashboard-panel"><p className="eyebrow">Practice intelligence</p><h2>Certificate follow-up dashboard</h2><p>Only patients with explicit marketing consent may be contacted.</p><div className="dashboard-stats"><strong>{rows.length}<small>Certificates</small></strong><strong>{rows.filter((row) => row.marketingAccepted).length}<small>Marketing opt-ins</small></strong></div><div className="dashboard-table">{rows.length ? rows.map((row) => <div className="dashboard-row" key={row.certificateNumber}><b>{row.certificateNumber}</b><span>{row.status}</span><span>{row.marketingAccepted ? 'WhatsApp permitted' : 'No marketing consent'}</span></div>) : <p>No certificates have been created yet.</p>}</div></section>
+}
+
 function EyeTests({ title, start, values, onChange }: { title: string, start: number, values: string[], onChange: ((value: string) => void)[] }) {
   return <fieldset className="eye-tests"><legend>{title}</legend><div className="test-grid">
     <Select number={start} label="Acuity with correction" value={values[0]} options={acuityOptions.map((item) => [item, item])} onChange={onChange[0]} />
@@ -254,7 +290,9 @@ function EyeTests({ title, start, values, onChange }: { title: string, start: nu
 }
 
 function Select({ number, label, value, options, onChange }: { number: number | string, label: string, value: string, options: string[][], onChange: (value: string) => void }) {
-  return <label className="field"><span><i>{number}</i>{label}</span><select value={value} onChange={(event) => onChange(event.target.value)} required><option value="">Select result</option>{options.map(([key, text]) => <option key={key} value={key}>{text}</option>)}</select></label>
+  const acuity = options.length > 5
+  const stateClass = value ? (acuity && Number.parseFloat(value.replace('6/', '')) <= 0.5 ? 'result-fail' : !acuity ? 'result-field' : 'result-pass') : ''
+  return <label className="field"><span><i>{number}</i>{label}</span><select className={stateClass} value={value} onChange={(event) => onChange(event.target.value)} required><option value="">Select result</option>{options.map(([key, text]) => <option key={key} value={key}>{text}</option>)}</select>{!acuity && value === 'second' && <small className="field-warning">Enter the actual horizontal degree measurement before printing.</small>}</label>
 }
 
 export default App

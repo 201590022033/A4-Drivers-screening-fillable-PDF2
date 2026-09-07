@@ -97,7 +97,7 @@ button:disabled {
   width: min(720px, calc(100% - 40px));
   margin: 28px auto 0;
   display: grid;
-  grid-template-columns: minmax(0, 1fr) 48px minmax(0, 1fr);
+  grid-template-columns: repeat(3, minmax(0, 1fr));
   align-items: center;
 }
 
@@ -147,6 +147,29 @@ button:disabled {
   height: 1px;
   background: var(--line);
 }
+
+.workflow .connector { display: none; }
+
+select.result-fail { background: #4b5556; color: #fff; }
+select.result-pass { background: #eef2f1; }
+select.result-field { background: #d6dcdb; }
+.field-warning { color: #8a4d18; font-size: 12px; font-weight: 700; }
+.generated-link { grid-column: 1 / -1; margin: 0; color: var(--muted); font-size: 13px; }
+.generated-link code { color: var(--teal); word-break: break-all; }
+.import-panel { grid-column: 1 / -1; display: grid; gap: 12px; padding: 18px; background: #fff; border: 1px solid var(--line); border-top: 3px solid var(--gold); border-radius: 6px; }
+.import-panel h3 { margin: 0; font: 700 20px var(--display); }
+.import-panel textarea { width: 100%; min-height: 130px; padding: 12px; resize: vertical; border: 1px solid var(--line); border-radius: 5px; }
+.import-result { display: grid; gap: 5px; padding: 14px; background: var(--teal-soft); border-radius: 5px; }
+.import-result p { margin: 0; color: var(--muted); }
+.dashboard-panel { padding: 28px; background: #fff; border-top: 4px solid var(--teal); border-radius: 6px; box-shadow: 0 8px 30px rgba(23,50,48,.08); }
+.dashboard-panel h2 { margin: 0 0 8px; font: 700 32px/1.1 var(--display); }
+.dashboard-panel > p:not(.eyebrow) { color: var(--muted); }
+.dashboard-stats { display: flex; gap: 14px; margin: 24px 0; }
+.dashboard-stats strong { min-width: 150px; padding: 18px; color: var(--teal); background: var(--teal-soft); font: 700 28px var(--display); border-radius: 5px; }
+.dashboard-stats small { display: block; color: var(--muted); font: 700 11px var(--sans); text-transform: uppercase; }
+.dashboard-table { border-top: 1px solid var(--line); }
+.dashboard-row { display: grid; grid-template-columns: 1fr 1fr 1.5fr; gap: 12px; padding: 14px 4px; border-bottom: 1px solid var(--line); color: var(--muted); font-size: 13px; }
+.dashboard-row b { color: var(--ink); }
 
 main {
   width: min(980px, calc(100% - 40px));
@@ -495,4 +518,9 @@ select {
     flex: 1 1 0;
     padding-inline: 10px;
   }
+}
+
+@media (max-width: 680px) {
+  .dashboard-panel { padding: 20px 14px; }
+  .dashboard-row { grid-template-columns: 1fr; gap: 4px; }
 }
