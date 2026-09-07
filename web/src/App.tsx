@@ -59,6 +59,7 @@ function App() {
   const [patientPhone, setPatientPhone] = useState('')
   const [patientLink, setPatientLink] = useState('')
   const [dashboardRows, setDashboardRows] = useState<{ certificateNumber: string, status: string, marketingAccepted: boolean, patientName?: string }[]>([])
+  const [dashboardCounts, setDashboardCounts] = useState<Record<string, number>>({})
   const [importText, setImportText] = useState('')
   const [importPreview, setImportPreview] = useState<ReturnType<typeof parseWhatsAppReply> | null>(null)
 
@@ -91,8 +92,8 @@ function App() {
   const confirmImport = () => { if (!importPreview || importPreview.warning?.includes('mismatch')) return; const p = importPreview.parsed; setData(current => ({ ...current, patientName: p.patientName || current.patientName, patientId: p.patientId || current.patientId, postalAddress: p.postalAddress || current.postalAddress })) ; setImportPreview(null); setImportText('') }
 
   const loadDashboard = async () => {
-    try { const response = await fetch('http://127.0.0.1:8000/api/dashboard'); const result = await response.json() as { certificates?: typeof dashboardRows }; setDashboardRows(result.certificates || []); setView('dashboard') }
-    catch { setDashboardRows([]); setView('dashboard'); setPdfError('Dashboard opened in local mode; the optional API service is unavailable.') }
+    try { const response = await fetch('http://127.0.0.1:8000/api/dashboard'); const result = await response.json() as { certificates?: typeof dashboardRows, counts?: Record<string, number> }; setDashboardRows(result.certificates || []); setDashboardCounts(result.counts || {}); setView('dashboard') }
+    catch { setDashboardRows([]); setDashboardCounts({}); setView('dashboard'); setPdfError('Dashboard opened in local mode; the optional API service is unavailable.') }
   }
 
   const clearCertificate = () => {
@@ -201,7 +202,7 @@ function App() {
           <p>{view === 'patient' ? 'Enter the details exactly as they appear on the patient’s identification.' : `Completing certificate for ${data.patientName || 'the patient'}.`}</p>
         </section>
 
-        {view === 'dashboard' ? <Dashboard rows={dashboardRows} /> : view === 'patient' ? (
+        {view === 'dashboard' ? <Dashboard rows={dashboardRows} counts={dashboardCounts} /> : view === 'patient' ? (
           <form className="form-grid" onSubmit={(event) => { event.preventDefault(); setView('practitioner') }}>
             <Field number="1" label="Full name and surname" value={data.patientName} onChange={(value) => update('patientName', value)} autoComplete="name" />
             <Field number="2" label="Postal address" value={data.postalAddress} onChange={(value) => update('postalAddress', value)} />
@@ -276,8 +277,9 @@ function Consent({ terms, marketing, onTerms, onMarketing }: { terms: boolean, m
   </fieldset>
 }
 
-function Dashboard({ rows }: { rows: { certificateNumber: string, status: string, marketingAccepted: boolean }[] }) {
-  return <section className="dashboard-panel"><p className="eyebrow">Practice intelligence</p><h2>Certificate follow-up dashboard</h2><p>Only patients with explicit marketing consent may be contacted.</p><div className="dashboard-stats"><strong>{rows.length}<small>Certificates</small></strong><strong>{rows.filter((row) => row.marketingAccepted).length}<small>Marketing opt-ins</small></strong></div><div className="dashboard-table">{rows.length ? rows.map((row) => <div className="dashboard-row" key={row.certificateNumber}><b>{row.certificateNumber}</b><span>{row.status}</span><span>{row.marketingAccepted ? 'WhatsApp permitted' : 'No marketing consent'}</span></div>) : <p>No certificates have been created yet.</p>}</div></section>
+function Dashboard({ rows, counts }: { rows: { certificateNumber: string, status: string, marketingAccepted: boolean, patientName?: string }[], counts: Record<string, number> }) {
+  const cards = [['DRAFT','Draft'],['AWAITING_PATIENT_DETAILS','Awaiting patient'],['READY_FOR_SCREENING','Ready for screening'],['COMPLETED_TODAY','Completed today']]
+  return <section className="dashboard-panel"><p className="eyebrow">Practice intelligence</p><h2>Certificate follow-up dashboard</h2><p>Live status counts from the local practice database.</p><div className="dashboard-stats">{cards.map(([key,label]) => <strong key={key}>{counts[key] || 0}<small>{label}</small></strong>)}</div><div className="dashboard-table">{rows.length ? rows.map((row) => <div className="dashboard-row" key={row.certificateNumber}><b>{row.patientName || 'Patient details pending'}<small>{row.certificateNumber}</small></b><span>{row.status}</span><span>{row.marketingAccepted ? 'WhatsApp permitted' : 'No marketing consent'}</span></div>) : <p>No certificates have been created yet.</p>}</div></section>
 }
 
 function EyeTests({ title, start, values, onChange }: { title: string, start: number, values: string[], onChange: ((value: string) => void)[] }) {

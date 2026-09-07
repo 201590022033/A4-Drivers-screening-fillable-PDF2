@@ -35,8 +35,11 @@ class API(BaseHTTPRequestHandler):
             if not row: self.send_json(404, {"error":"link expired or invalid"}); return
             self.send_json(200, {"certificateNumber":row[0], "status":row[1], "patient":json.loads(row[2])}); return
         if self.path.startswith("/api/dashboard"):
-            with sqlite3.connect(DB) as db: rows = db.execute("SELECT certificate_number,status,marketing_accepted,created_at FROM certificates ORDER BY created_at DESC").fetchall()
-            self.send_json(200, {"certificates":[{"certificateNumber":r[0],"status":r[1],"marketingAccepted":bool(r[2]),"createdAt":r[3]} for r in rows]}); return
+            with connect(DB) as db:
+                rows = db.execute("SELECT c.certificate_number,c.status,c.marketing_accepted,c.created_at,COALESCE(p.first_name||' '||p.surname,'') FROM certificates c LEFT JOIN patients p ON p.id=c.patient_id ORDER BY c.updated_at DESC LIMIT 50").fetchall()
+                counts = {status: db.execute("SELECT count(*) FROM certificates WHERE status=?", (status,)).fetchone()[0] for status in ('DRAFT','AWAITING_PATIENT_DETAILS','READY_FOR_SCREENING','COMPLETED')}
+                counts['COMPLETED_TODAY'] = db.execute("SELECT count(*) FROM certificates WHERE status='COMPLETED' AND date(completion_date)=date('now','localtime')").fetchone()[0]
+            self.send_json(200, {"counts":counts, "certificates":[{"certificateNumber":r[0],"status":r[1],"marketingAccepted":bool(r[2]),"createdAt":r[3],"patientName":r[4]} for r in rows]}); return
         self.send_json(404, {"error":"not found"})
     def do_PUT(self):
         if not self.path.startswith("/api/patient/"): self.send_json(404, {"error":"not found"}); return

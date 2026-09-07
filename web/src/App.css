@@ -170,6 +170,7 @@ select.result-field { background: #d6dcdb; }
 .dashboard-table { border-top: 1px solid var(--line); }
 .dashboard-row { display: grid; grid-template-columns: 1fr 1fr 1.5fr; gap: 12px; padding: 14px 4px; border-bottom: 1px solid var(--line); color: var(--muted); font-size: 13px; }
 .dashboard-row b { color: var(--ink); }
+.dashboard-row b small { display: block; margin-top: 3px; color: var(--muted); font-weight: 600; }
 
 main {
   width: min(980px, calc(100% - 40px));
