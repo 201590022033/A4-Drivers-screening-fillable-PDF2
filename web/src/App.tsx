@@ -58,7 +58,7 @@ function App() {
   const [isGenerating, setIsGenerating] = useState(false)
   const [patientPhone, setPatientPhone] = useState('')
   const [patientLink, setPatientLink] = useState('')
-  const [dashboardRows, setDashboardRows] = useState<{ certificateNumber: string, status: string, marketingAccepted: boolean }[]>([])
+  const [dashboardRows, setDashboardRows] = useState<{ certificateNumber: string, status: string, marketingAccepted: boolean, patientName?: string }[]>([])
   const [importText, setImportText] = useState('')
   const [importPreview, setImportPreview] = useState<ReturnType<typeof parseWhatsAppReply> | null>(null)
 

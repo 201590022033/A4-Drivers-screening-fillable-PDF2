@@ -2,13 +2,13 @@
 from http.server import BaseHTTPRequestHandler, HTTPServer
 import hashlib, json, secrets, sqlite3
 from pathlib import Path
+from database import connect
 
 DB = Path(__file__).with_name("saoa.sqlite3")
 CONSENT_VERSION = "2026-09-07"
 
 def init_db():
-    with sqlite3.connect(DB) as db:
-        db.execute("CREATE TABLE IF NOT EXISTS certificates (id INTEGER PRIMARY KEY, certificate_number TEXT UNIQUE NOT NULL, patient_token_hash TEXT UNIQUE NOT NULL, patient_json TEXT NOT NULL DEFAULT '{}', status TEXT NOT NULL DEFAULT 'patient_pending', terms_accepted INTEGER NOT NULL DEFAULT 0, marketing_accepted INTEGER NOT NULL DEFAULT 0, consent_version TEXT, created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP, updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP)")
+    with connect(DB) as db: db.execute("UPDATE certificates SET status='DRAFT' WHERE status='patient_pending'")
 
 def digest(token): return hashlib.sha256(token.encode()).hexdigest()
 

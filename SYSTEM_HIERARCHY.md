@@ -23,6 +23,14 @@
 - Consent event: terms version, POPIA acknowledgement, marketing opt-in, timestamp, IP/user-agent where lawful.
 - Audit event: create, edit, submit, print, download and consent changes.
 
+## Local database foundation
+
+`backend/database.py` owns the SQLite schema for patients, certificates,
+historical screenings and communications. It enables foreign keys and adds
+indexes for common patient, certificate, screening-date and communication
+queries. `backup()` uses SQLite's online backup API and creates timestamped
+files without replacing the live database.
+
 ## 4. Trust boundaries
 
 - Certificate number identifies the physical certificate but is not a secret.
@@ -35,4 +43,3 @@
 `Data Fields PDF.pdf` → extract widget names/rectangles → map frontend fields → fill fields → flatten/export → print-test PDF.
 
 The visible preprinted certificate number in the background must be masked in the sanitized template. The practice-entered number is written into the correct certificate-number field.
-

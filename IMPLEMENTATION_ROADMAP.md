@@ -1,52 +1,40 @@
 # Implementation Roadmap and Test Gates
 
-## Milestone 1 — Authoritative PDF mapping
+## Completed — Milestones 1–2 foundations
 
-- Extract and catalogue all 70 field rectangles from `Data Fields PDF.pdf`.
-- Add missing address lines, postal code and certificate number.
-- Replace manual coordinate drawing with PDF field filling.
-- Produce `SAOA_Print_Test.pdf` from a clearly labelled test record.
+- Uploaded PDF field mapping, sanitized certificate template and PDF filling.
+- Missing patient/practice fields, consent controls and clinical styling.
+- WhatsApp questionnaire, South African phone normalization, deterministic local reply import, mismatch warning and confirmation preview.
+- Initial optometrist dashboard view and embedded SQLite schema foundation.
 
-Test gate: every field name maps once; generated PDF opens; text and marks remain inside the source rectangles at 100% print scale; no sample certificate number remains in the template background.
+## Milestone 3 — Dashboard and Patients
 
-## Milestone 2 — Form and visual redesign
+- Connect status cards and recent certificates to real SQLite records.
+- Add patient search, patient detail, screening history and certificate history.
+- Persist workflow states without breaking existing certificate output.
 
-- Keep patient and optometrist workflows distinct.
-- Add certificate-number setup to the practice workflow.
-- Add the sanitized certificate as a faded optometrist alignment background.
-- Add accessible validation, mobile layout, and optometrist-oriented visual language.
+Test gate: counts derive from fixtures; partial matching works; historical screenings are never overwritten; PDF regression passes.
 
-Test gate: keyboard navigation, mobile viewport, required-field errors, alignment screenshot review, and browser PDF preview/download smoke test.
+## Milestone 4 — Recall & Marketing
 
-## Milestone 3 — Embedded backend and secure patient link
+- Add local filters for screening age, due recall, correction required, unaided/corrected VA and explicit recall/marketing permissions.
+- Add editable local templates and manual `wa.me` actions.
+- Record Generated, Marked Sent, Skipped and Cancelled communications; never claim delivery.
 
-- Add a small API service and SQLite database; SQLite is embedded and needs no SQL server installation.
-- Store only hashed patient-link tokens; expire and revoke tokens.
-- Validate certificate-number uniqueness per practice.
-- Add patient submit status and optometrist retrieval.
+Test gate: non-consenting patients are excluded; phone URLs encode correctly; communications history records user actions.
 
-Test gate: token cannot be guessed from certificate number; expired/revoked links fail; duplicate certificate numbers are rejected; patient cannot access another record.
+## Milestone 5 — Analytics
 
-## Milestone 4 — Consent and audit
+- Add local cards for screenings this month, recall due, correction required and completed certificates.
+- Add structured VA ordering/filtering and pass/fail statistics.
+- Add explicit local CSV export.
 
-- Add required acceptance of terms and POPIA privacy notice.
-- Add separate optional marketing consent: “I agree that the practice may send me WhatsApp messages related to my eye health and offers.”
-- Record consent version, timestamp and record status; allow withdrawal.
+Test gate: date-range and VA fixtures produce expected counts; no patient data leaves the application.
 
-Test gate: submission is blocked without required consent; marketing filters exclude non-opted-in patients; withdrawal removes the patient from future marketing results.
+## Milestone 6 — Backup, Restore and Release
 
-## Milestone 5 — Dashboard and manual WhatsApp sharing
+- Add Backup Now using SQLite's safe backup API, configurable local directory and retention guidance.
+- Add safety-backup-first restore confirmation.
+- Add settings, migration fixtures, deployment documentation and full print verification.
 
-- Add filters for unaided VA, corrected VA, eye and threshold such as `< 0.7`.
-- Add consent-aware custom message composition.
-- Generate a `wa.me` URL; staff confirms and sends the message manually.
-
-Test gate: generated message contains only the secure link; no patient ID or certificate number is exposed; non-consenting patients cannot be selected for marketing.
-
-## Milestone 6 — Release hardening
-
-- Backup/restore procedure, retention rules, audit review and deployment configuration.
-- PDF regression fixtures and end-to-end tests.
-
-Test gate: clean build, lint, API tests, PDF fixture comparison, consent audit and print verification signed off by the practice.
-
+Test gate: backup opens as valid SQLite; live data is unchanged; restore cannot silently overwrite; build, lint and all tests pass.
