@@ -1,16 +1,18 @@
 import { useEffect, useState } from 'react'
 import { Check, Download, Eye, FileText, ShieldCheck, Stethoscope, Trash2, UserRound, X } from 'lucide-react'
-import { PDFDocument, StandardFonts, rgb } from 'pdf-lib'
+import { PDFDocument } from 'pdf-lib'
 import './App.css'
 
 type View = 'patient' | 'practitioner'
 type CertificateData = {
   patientName: string
   postalAddress: string
+  postalAddress2: string
   patientId: string
   patientSignature: string
   practitionerName: string
   practiceAddress: string
+  practicePostalCode: string
   telephone: string
   hpcsaNumber: string
   practiceNumber: string
@@ -24,16 +26,19 @@ type CertificateData = {
   leftTotal: string
   practitionerSignature: string
   screeningDate: string
+  certificateNumber: string
+  termsAccepted: boolean
+  marketingAccepted: boolean
 }
 
 const STORAGE_KEY = 'saoa-certificate-data'
 const acuityOptions = ['<6/60', '6/36', '6/24', '6/18', '6/12', '6/9', '6/9+', '6/7.5', '6/7.5+', '6/6', '6/6+', '6/5+']
 const initialData: CertificateData = {
-  patientName: '', postalAddress: '', patientId: '', patientSignature: '',
-  practitionerName: '', practiceAddress: '', telephone: '', hpcsaNumber: '', practiceNumber: '',
+  patientName: '', postalAddress: '', postalAddress2: '', patientId: '', patientSignature: '',
+  practitionerName: '', practiceAddress: '', practicePostalCode: '', telephone: '', hpcsaNumber: '', practiceNumber: '',
   rightWith: '', rightWithout: '', rightTemporal: '', rightTotal: '',
   leftWith: '', leftWithout: '', leftTemporal: '', leftTotal: '',
-  practitionerSignature: '', screeningDate: '',
+  practitionerSignature: '', screeningDate: '', certificateNumber: '', termsAccepted: false, marketingAccepted: false,
 }
 
 function loadData() {
@@ -72,53 +77,46 @@ function App() {
     setPdfError('')
   }
 
-  const patientComplete = Boolean(data.patientName && data.postalAddress && data.patientId && data.patientSignature)
+  const patientComplete = Boolean(data.patientName && data.postalAddress && data.patientId && data.patientSignature && data.termsAccepted)
   const practitionerComplete = Boolean(
-    data.practitionerName && data.practiceAddress && data.hpcsaNumber && data.practiceNumber &&
+    data.practitionerName && data.practiceAddress && data.practicePostalCode && data.hpcsaNumber && data.practiceNumber && data.certificateNumber &&
     data.rightWith && data.rightWithout && data.rightTemporal && data.rightTotal &&
     data.leftWith && data.leftWithout && data.leftTemporal && data.leftTotal &&
     data.practitionerSignature && data.screeningDate,
   )
 
   const createPdf = async () => {
-    const response = await fetch('/SAOA_FINAL_cleaned.pdf')
+    const response = await fetch('/SAOA_TEMPLATE_SANITIZED.pdf')
     if (!response.ok) throw new Error('The certificate template could not be loaded.')
     const template = await response.arrayBuffer()
     const pdfDocument = await PDFDocument.load(template)
-    const page = pdfDocument.getPage(0)
-    const font = await pdfDocument.embedFont(StandardFonts.Helvetica)
-    const ink = rgb(0.08, 0.12, 0.24)
-    const write = (value: string, x: number, y: number, size = 9, maxWidth = 300) => {
-      page.drawText(value, { x, y, size, font, color: ink, maxWidth, lineHeight: size + 2 })
-    }
-    const markAcuity = (value: string, y: number) => {
-      const index = acuityOptions.indexOf(value)
-      if (index >= 0) write('X', 165 + index * 34.2, y, 10, 12)
-    }
-    const markChoice = (value: string, first: [number, number], second: [number, number]) => {
-      if (value) write('X', ...(value === 'first' ? first : second), 10, 12)
-    }
-
-    write(data.patientName, 258, 697)
-    write(data.postalAddress, 258, 654)
-    write(data.patientId, 258, 611, 9, 150)
-    write(data.patientSignature, 478, 611, 9, 90)
-    write(data.practitionerName, 258, 561)
-    write(data.practiceAddress, 258, 515, 8, 160)
-    write(data.telephone, 430, 515, 8, 130)
-    write(data.hpcsaNumber, 258, 474, 8, 100)
-    write(data.practiceNumber, 430, 474, 8, 130)
-    markAcuity(data.rightWith, 367)
-    markAcuity(data.rightWithout, 338)
-    markChoice(data.rightTemporal, [271, 312], [271, 291])
-    markChoice(data.rightTotal, [548, 312], [548, 291])
-    markAcuity(data.leftWith, 199)
-    markAcuity(data.leftWithout, 179)
-    markChoice(data.leftTemporal, [271, 145], [271, 124])
-    markChoice(data.leftTotal, [548, 145], [548, 124])
-    write(data.practitionerSignature, 262, 90, 9, 130)
-    write(data.screeningDate, 425, 90, 9, 120)
-
+    const form = pdfDocument.getForm()
+    const text = (name: string, value: string) => { if (value) form.getTextField(name).setText(value) }
+    text("Patient's full name and surname", data.patientName)
+    text("Patient's postal address 1", data.postalAddress)
+    text("Patient's postal address 2", data.postalAddress2)
+    text("Patient's ID number", data.patientId)
+    text("Patient's signature", data.patientSignature)
+    text("Dispensing Optician/Optometrist's full name and surname", data.practitionerName)
+    text('Practice physical address', data.practiceAddress)
+    text('Practice Postal Code', data.practicePostalCode)
+    text('HPCSA registration number', data.hpcsaNumber)
+    text('Tel Nr', data.telephone)
+    text('Practice Nr', data.practiceNumber)
+    text('Optometrist Signature', data.practitionerSignature)
+    text('Certificate Number', data.certificateNumber)
+    text('Date of screening', data.screeningDate)
+    const check = (prefix: string, eye: string, value: string) => { if (value) form.getCheckBox(`${prefix} ${eye} ${value}`).check() }
+    check('Acuity With glasses/contact lenses', 'R', data.rightWith)
+    check('Acuity Without glasses/contact lenses', 'R', data.rightWithout)
+    check('Acuity With glasses/contact lenses', 'L', data.leftWith)
+    check('Acuity Without glasses/contact lenses', 'L', data.leftWithout)
+    const choice = (name: string, value: string, secondName = name) => { if (value) form.getTextField(`${value === 'first' ? name : secondName} ${value === 'first' ? '0 to 69 degrees' : '70+ degrees'}`).setText('X') }
+    choice('R Actual horizontal temporal field', data.rightTemporal)
+    choice('R Actual horizontal total field', data.rightTotal)
+    choice('L Actual horizontal temporal field', data.leftTemporal)
+    choice('L Actual horizontal total field', data.leftTotal, 'undefined.R Actual horizontal total field')
+    form.flatten()
     return new Uint8Array(await pdfDocument.save())
   }
 
@@ -179,8 +177,10 @@ function App() {
           <form className="form-grid" onSubmit={(event) => { event.preventDefault(); setView('practitioner') }}>
             <Field number="1" label="Full name and surname" value={data.patientName} onChange={(value) => update('patientName', value)} autoComplete="name" />
             <Field number="2" label="Postal address" value={data.postalAddress} onChange={(value) => update('postalAddress', value)} />
+            <Field number="2b" label="Postal address (line 2)" value={data.postalAddress2} onChange={(value) => update('postalAddress2', value)} />
             <Field number="3" label="South African ID or passport number" value={data.patientId} onChange={(value) => update('patientId', value)} />
             <Field number="4" label="Typed signature" value={data.patientSignature} onChange={(value) => update('patientSignature', value)} />
+            <Consent onTerms={(value) => setData((current) => ({ ...current, termsAccepted: value }))} onMarketing={(value) => setData((current) => ({ ...current, marketingAccepted: value }))} terms={data.termsAccepted} marketing={data.marketingAccepted} />
             <div className="form-actions"><span><ShieldCheck size={17} /> Details exist only in this browser tab.</span><button type="submit" disabled={!patientComplete}>Continue to optometrist</button></div>
           </form>
         ) : (
@@ -188,9 +188,11 @@ function App() {
             <div className="form-grid compact">
               <Field number="5" label="Full name and surname" value={data.practitionerName} onChange={(value) => update('practitionerName', value)} />
               <Field number="6" label="Practice physical address" value={data.practiceAddress} onChange={(value) => update('practiceAddress', value)} />
+              <Field number="6b" label="Practice postal code" value={data.practicePostalCode} onChange={(value) => update('practicePostalCode', value)} />
               <Field number="7" label="Telephone number" value={data.telephone} onChange={(value) => update('telephone', value)} type="tel" />
               <Field number="8" label="HPCSA registration number" value={data.hpcsaNumber} onChange={(value) => update('hpcsaNumber', value)} />
               <Field number="9" label="Practice number" value={data.practiceNumber} onChange={(value) => update('practiceNumber', value)} />
+              <Field number="C" label="Preprinted certificate number" value={data.certificateNumber} onChange={(value) => update('certificateNumber', value)} />
             </div>
             <EyeTests title="Right eye" start={10} values={[data.rightWith, data.rightWithout, data.rightTemporal, data.rightTotal]} onChange={[
               (value) => update('rightWith', value), (value) => update('rightWithout', value),
@@ -232,6 +234,14 @@ function App() {
 function Field({ number, label, value, onChange, type = 'text', autoComplete }: { number: string, label: string, value: string, onChange: (value: string) => void, type?: string, autoComplete?: string }) {
   const id = `field-${number}`
   return <label className="field" htmlFor={id}><span><i>{number}</i>{label}</span><input id={id} value={value} onChange={(event) => onChange(event.target.value)} type={type} autoComplete={autoComplete} required /></label>
+}
+
+function Consent({ terms, marketing, onTerms, onMarketing }: { terms: boolean, marketing: boolean, onTerms: (value: boolean) => void, onMarketing: (value: boolean) => void }) {
+  return <fieldset className="consent-box">
+    <legend>Patient authorisation</legend>
+    <label><input type="checkbox" checked={terms} onChange={(e) => onTerms(e.target.checked)} required /> I accept the practice terms and conditions and acknowledge the POPIA privacy notice. I consent to my information being shared with the optometrist for this driver-vision certificate.</label>
+    <label><input type="checkbox" checked={marketing} onChange={(e) => onMarketing(e.target.checked)} /> I agree that the practice may send me WhatsApp messages related to my eye health, eye tests and relevant offers. (Optional)</label>
+  </fieldset>
 }
 
 function EyeTests({ title, start, values, onChange }: { title: string, start: number, values: string[], onChange: ((value: string) => void)[] }) {
