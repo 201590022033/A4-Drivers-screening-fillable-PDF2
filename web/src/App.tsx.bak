@@ -178,7 +178,7 @@ function App() {
         {view === 'patient' ? (
           <form className="form-grid" onSubmit={(event) => { event.preventDefault(); setView('practitioner') }}>
             <Field number="1" label="Full name and surname" value={data.patientName} onChange={(value) => update('patientName', value)} autoComplete="name" />
-            <Field number="2" label="Postal address" value={data.postalAddress} onChange={(value) => update('postalAddress', value)} />
+            <Field number="2" label="Postal address" value={data.postalAddress} onChange={(value) => update('postalAddress', value)} multiline />
             <Field number="3" label="South African ID or passport number" value={data.patientId} onChange={(value) => update('patientId', value)} />
             <Field number="4" label="Typed signature" value={data.patientSignature} onChange={(value) => update('patientSignature', value)} />
             <div className="form-actions"><span><ShieldCheck size={17} /> Details exist only in this browser tab.</span><button type="submit" disabled={!patientComplete}>Continue to optometrist</button></div>
@@ -187,7 +187,7 @@ function App() {
           <form className="clinical-form" onSubmit={(event) => { event.preventDefault(); void previewPdf() }}>
             <div className="form-grid compact">
               <Field number="5" label="Full name and surname" value={data.practitionerName} onChange={(value) => update('practitionerName', value)} />
-              <Field number="6" label="Practice physical address" value={data.practiceAddress} onChange={(value) => update('practiceAddress', value)} />
+              <Field number="6" label="Practice physical address" value={data.practiceAddress} onChange={(value) => update('practiceAddress', value)} multiline />
               <Field number="7" label="Telephone number" value={data.telephone} onChange={(value) => update('telephone', value)} type="tel" />
               <Field number="8" label="HPCSA registration number" value={data.hpcsaNumber} onChange={(value) => update('hpcsaNumber', value)} />
               <Field number="9" label="Practice number" value={data.practiceNumber} onChange={(value) => update('practiceNumber', value)} />
@@ -229,9 +229,9 @@ function App() {
   )
 }
 
-function Field({ number, label, value, onChange, type = 'text', autoComplete }: { number: string, label: string, value: string, onChange: (value: string) => void, type?: string, autoComplete?: string }) {
+function Field({ number, label, value, onChange, multiline = false, type = 'text', autoComplete }: { number: string, label: string, value: string, onChange: (value: string) => void, multiline?: boolean, type?: string, autoComplete?: string }) {
   const id = `field-${number}`
-  return <label className="field" htmlFor={id}><span><i>{number}</i>{label}</span><input id={id} value={value} onChange={(event) => onChange(event.target.value)} type={type} autoComplete={autoComplete} required /></label>
+  return <label className={multiline ? 'field wide' : 'field'} htmlFor={id}><span><i>{number}</i>{label}</span>{multiline ? <textarea id={id} value={value} onChange={(event) => onChange(event.target.value)} required rows={2} /> : <input id={id} value={value} onChange={(event) => onChange(event.target.value)} type={type} autoComplete={autoComplete} required />}</label>
 }
 
 function EyeTests({ title, start, values, onChange }: { title: string, start: number, values: string[], onChange: ((value: string) => void)[] }) {

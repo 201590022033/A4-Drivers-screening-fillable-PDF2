@@ -66,6 +66,7 @@ button {
 
 button:focus-visible,
 input:focus-visible,
+textarea:focus-visible,
 select:focus-visible {
   outline: 3px solid rgba(0, 116, 110, 0.28);
   outline-offset: 2px;
@@ -200,6 +201,10 @@ main {
   font-weight: 700;
 }
 
+.field.wide {
+  grid-column: 1 / -1;
+}
+
 .field > span {
   min-height: 38.4px;
   display: flex;
@@ -221,6 +226,7 @@ main {
 }
 
 input,
+textarea,
 select {
   width: 80%;
   margin-right: 20%;
@@ -236,6 +242,12 @@ input,
 select {
   height: 38.4px;
   padding: 0 13px;
+}
+
+textarea {
+  min-height: 67.2px;
+  padding: 11px 13px;
+  resize: vertical;
 }
 
 .eye-tests {
