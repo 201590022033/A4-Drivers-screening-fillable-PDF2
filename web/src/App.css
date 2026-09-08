@@ -4,7 +4,6 @@
     linear-gradient(135deg, rgba(0, 116, 110, 0.08), transparent 42%),
     var(--surface);
 }
-
 .topbar {
   min-height: 72px;
   padding: 0 32px;
@@ -47,7 +46,7 @@
 }
 
 .topbar small {
-  color: #bdcac9;
+  color: var(--muted);
   font-size: 12px;
 }
 
@@ -90,7 +89,7 @@ button:disabled {
 .clear-button {
   color: #fff;
   background: transparent;
-  border-color: #55706d;
+  border-color: var(--muted);
 }
 
 .workflow {
@@ -150,9 +149,9 @@ button:disabled {
 
 .workflow .connector { display: none; }
 
-select.result-fail { background: #4b5556; color: #fff; }
-select.result-pass { background: #eef2f1; }
-select.result-field { background: #d6dcdb; }
+select.result-fail { background: #3a2a4a; color: #fff; }
+select.result-pass { background: var(--teal-soft); }
+select.result-field { background: #d9d0e6; }
 .field-warning { color: #8a4d18; font-size: 12px; font-weight: 700; }
 .generated-link { grid-column: 1 / -1; margin: 0; color: var(--muted); font-size: 13px; }
 .generated-link code { color: var(--teal); word-break: break-all; }
@@ -161,7 +160,7 @@ select.result-field { background: #d6dcdb; }
 .import-panel textarea { width: 100%; min-height: 130px; padding: 12px; resize: vertical; border: 1px solid var(--line); border-radius: 5px; }
 .import-result { display: grid; gap: 5px; padding: 14px; background: var(--teal-soft); border-radius: 5px; }
 .import-result p { margin: 0; color: var(--muted); }
-.dashboard-panel { padding: 28px; background: #fff; border-top: 4px solid var(--teal); border-radius: 6px; box-shadow: 0 8px 30px rgba(23,50,48,.08); }
+.dashboard-panel { padding: 28px; background: #fff; border-top: 4px solid var(--teal); border-radius: 6px; box-shadow: 0 8px 30px rgba(59,20,100,.08); }
 .dashboard-panel h2 { margin: 0 0 8px; font: 700 32px/1.1 var(--display); }
 .dashboard-panel > p:not(.eyebrow) { color: var(--muted); }
 .dashboard-stats { display: flex; gap: 14px; margin: 24px 0; }
@@ -251,7 +250,7 @@ select {
   box-sizing: border-box;
   color: var(--ink);
   background: #fff;
-  border: 1px solid #b9c6c4;
+  border: 1px solid var(--line);
   border-radius: 5px;
   font: 16px/1.4 var(--sans);
 }
@@ -305,8 +304,8 @@ select {
   margin: 4px 0 0;
   padding: 18px;
   color: var(--ink);
-  background: #eaf5f3;
-  border: 1px solid #b9d8d3;
+  background: var(--teal-soft);
+  border: 1px solid #d9c8f5;
   border-left: 4px solid var(--teal);
   border-radius: 6px;
 }
@@ -428,7 +427,7 @@ select {
   width: 100%;
   height: 100%;
   min-height: 360px;
-  background: #697371;
+  background: #6b5b7d;
   border: 1px solid var(--line);
 }
 
@@ -521,7 +520,155 @@ select {
   }
 }
 
+.practice-setup-panel {
+  margin-top: 32px;
+  padding: 24px;
+  background: var(--teal-soft);
+  border: 1px solid var(--line);
+  border-top: 3px solid var(--teal);
+  border-radius: 6px;
+}
+
+.practice-setup-panel h3 {
+  margin: 0 0 6px;
+  font: 700 20px/1 var(--display);
+}
+
+.practice-setup-panel > p {
+  margin: 0 0 18px;
+  color: var(--muted);
+  font-size: 13px;
+}
+
+.export-panel {
+  margin-top: 32px;
+  padding-top: 24px;
+  border-top: 1px solid var(--line);
+}
+
+.export-panel h3 {
+  margin: 0 0 6px;
+  font: 700 20px/1 var(--display);
+}
+
+.export-panel > p {
+  margin: 0 0 14px;
+  color: var(--muted);
+  font-size: 13px;
+}
+
+.export-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.export-actions button {
+  min-height: 40px;
+  padding: 0 14px;
+  color: var(--ink);
+  background: #fff;
+  border-color: var(--line);
+  font-size: 13px;
+}
+
+.practice-name {
+  margin-bottom: 18px;
+  padding: 16px;
+  background: var(--teal-soft);
+  border-radius: 6px;
+}
+
+.practice-name input {
+  width: 100%;
+  margin-right: 0;
+}
+
+.recall-actions {
+  display: flex;
+  justify-content: flex-end;
+  margin-bottom: 16px;
+}
+
+.recall-actions button {
+  color: #fff;
+  background: var(--teal);
+}
+
+.dashboard-row button {
+  min-height: 34px;
+  padding: 0 12px;
+  font-size: 12px;
+}
+
+.whatsapp-dialog .whatsapp-content {
+  display: grid;
+  gap: 14px;
+}
+
+.whatsapp-dialog textarea {
+  width: 100%;
+  min-height: 120px;
+  padding: 12px;
+  resize: vertical;
+  border: 1px solid var(--line);
+  border-radius: 5px;
+  font: 15px/1.5 var(--sans);
+}
+
+.whatsapp-dialog .nav-buttons {
+  display: flex;
+  gap: 10px;
+}
+
+.whatsapp-dialog footer {
+  justify-content: space-between;
+}
+
+.whatsapp-dialog footer button:first-child {
+  margin-right: auto;
+}
+
+.muted-table {
+  margin-top: 18px;
+  padding-top: 16px;
+  border-top: 1px dashed var(--line);
+}
+
+.muted-table > p {
+  margin: 0 0 10px;
+  color: var(--muted);
+  font-size: 13px;
+}
+
+.muted-table .dashboard-row {
+  opacity: 0.7;
+}
+
+.field-hint {
+  color: var(--teal);
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.field input[type='number'] {
+  appearance: textfield;
+}
+
+.field input[type='number']::-webkit-outer-spin-button,
+.field input[type='number']::-webkit-inner-spin-button {
+  appearance: none;
+  margin: 0;
+}
+
 @media (max-width: 680px) {
   .dashboard-panel { padding: 20px 14px; }
   .dashboard-row { grid-template-columns: 1fr; gap: 4px; }
+  .export-actions { flex-direction: column; }
+  .export-actions button { width: 100%; justify-content: center; }
+  .recall-actions { justify-content: stretch; }
+  .recall-actions button { width: 100%; }
+  .whatsapp-dialog footer { flex-direction: column-reverse; align-items: stretch; }
+  .whatsapp-dialog .nav-buttons { width: 100%; flex-direction: column-reverse; }
+  .whatsapp-dialog .nav-buttons button { width: 100%; }
 }

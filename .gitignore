@@ -5,3 +5,4 @@ SAOA_Print_Test.pdf
 .kimi-memory/
 # Local runtime database
 backend/*.sqlite3
+backend/*.log

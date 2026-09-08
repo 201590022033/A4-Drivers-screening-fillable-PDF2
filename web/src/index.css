@@ -1,13 +1,13 @@
 @import url('https://fonts.googleapis.com/css2?family=Manrope:wght@400;600;700;800&family=Source+Serif+4:wght@600;700&display=swap');
 
 :root {
-  --ink: #173230;
-  --muted: #5f716f;
-  --surface: #f4f7f5;
-  --line: #d5dfdc;
-  --teal: #00746e;
-  --teal-soft: #e1f1ef;
-  --gold: #f3c969;
+  --ink: #08060d;
+  --muted: #6b5b7d;
+  --surface: #f7f5fb;
+  --line: #e5dff0;
+  --teal: #863bff;
+  --teal-soft: #ede6ff;
+  --gold: #aa3bff;
   --sans: 'Manrope', sans-serif;
   --display: 'Source Serif 4', serif;
   color: var(--ink);
